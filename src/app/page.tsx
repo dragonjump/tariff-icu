@@ -16,6 +16,8 @@ export default function Home() {
     title: "",
     rates: {},
   });
+  const [insights, setInsights] = useState<string | undefined>('');
+
   const [finalPrice, setFinalPrice] = useState<number | undefined>(undefined);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -85,7 +87,7 @@ export default function Home() {
     return Object.keys(hardcodedRates).sort();
   };
 
-  const calculateTariff = () => {
+  const calculateTariff = async() => {
     if (price === undefined) {
       setFinalPrice(undefined);
       return;
@@ -99,6 +101,25 @@ export default function Home() {
     const tariffRate = tariffRates.rates[country] || 0;
     const calculatedPrice = price * (1 + tariffRate);
     setFinalPrice(calculatedPrice);
+
+    //get the api 
+    // https://n8n.jom.lol/webhook/tariff-insight?country=malaysia
+
+    const response = await fetch('https://n8n.jom.lol/webhook/tariff-insight?country=' + encodeURIComponent(country), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }, 
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (Array.isArray(data) && data.length > 0) {
+     setInsights(data[0].output)  
+    }  
   };
 
   return (
@@ -156,6 +177,11 @@ export default function Home() {
               <div className="grid gap-2">
                 <label>New Min Price after Tariff</label>
                 <div className="font-semibold text-xl">{finalPrice.toFixed(2)}</div>
+
+                <h4><br/>Insights<br/><br/>    </h4>
+                <p><span dangerouslySetInnerHTML={{ __html: (insights||'') }} ></span>
+                </p>
+             
               </div>
             )}
           </CardContent>
